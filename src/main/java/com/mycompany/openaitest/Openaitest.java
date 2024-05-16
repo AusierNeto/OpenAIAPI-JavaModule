@@ -6,10 +6,12 @@ import java.net.URL;
 
 
 public class Openaitest {
+    
+    static String apiKey = System.getenv("OPENAI_API_KEY");
+    static String currentDirectory = System.getProperty("user.dir");
 
-   public static String chatGPT(String prompt) {
+    public static String chatGPT(String prompt) {
        String url = "https://api.openai.com/v1/chat/completions";
-       String apiKey = System.getenv("OPENAI_API_KEY");
        String model = "gpt-3.5-turbo";
 
        try {
@@ -45,6 +47,46 @@ public class Openaitest {
            throw new RuntimeException(e);
        }
    }
+   
+    public static String whisperTranscription() {
+       String url = "https://api.openai.com/v1/audio/transcriptions";
+       String model = "whisper-1";
+       
+       try {
+           URL obj = new URL(url);
+           HttpURLConnection connection = (HttpURLConnection) obj.openConnection();
+           
+           connection.setRequestMethod("POST");
+           connection.setRequestProperty("Authorization", "Bearer " + apiKey);
+           connection.setRequestProperty("Content-Type", "application/json");
+           
+           File file = new File(currentDirectory + "\\output.wav");
+           
+           String body = "{\"model\": \"" + model + "\", \"language\": \"pt\", \"file\":\"" + file + "}";
+           connection.setDoOutput(true);
+           OutputStreamWriter writer = new OutputStreamWriter(connection.getOutputStream());
+           writer.write(body);
+           writer.flush();
+           writer.close();
+           
+           // Response from ChatGPT
+           BufferedReader br = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+           String line;
+
+           StringBuffer response = new StringBuffer();
+
+           while ((line = br.readLine()) != null) {
+               response.append(line);
+           }
+           br.close();
+
+           // calls the method to extract the message.
+           return extractMessageFromJSONResponse(response.toString());
+           
+       } catch (Exception e) {
+           throw new RuntimeException(e);
+       }
+   }
 
    public static String extractMessageFromJSONResponse(String response) {
        int start = response.indexOf("content")+ 11;
@@ -57,7 +99,8 @@ public class Openaitest {
 
    public static void main(String[] args) {
 
-       System.out.println(chatGPT("hello, how are you? Can you tell me what's a Fibonacci Number?"));
+       //System.out.println(chatGPT("hello, how are you? Can you tell me what's a Fibonacci Number?"));
+       System.out.println(whisperTranscription());
 
    }
 }
